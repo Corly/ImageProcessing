@@ -5,6 +5,7 @@
 #include "exposure.h"
 #include "whitebalancing.h"
 #include "noisefilter.h"
+#include "barrel.h"
 
 typedef unsigned char byte;
 
@@ -62,9 +63,9 @@ int main(int argc, char **argv) {
     }
     else if (strcmp(argv[2], "whitebalancing") == 0) {
         // white balancing
-        byte *histogram_red = (byte*)malloc(sizeof(byte) * width * height); 
-        byte *histogram_green = (byte*)malloc(sizeof(byte) * width * height); 
-        byte *histogram_blue = (byte*)malloc(sizeof(byte) * width * height); 
+        int *histogram_red = (int*)malloc(sizeof(byte) * width * height); 
+        int *histogram_green = (int*)malloc(sizeof(byte) * width * height); 
+        int *histogram_blue = (int*)malloc(sizeof(byte) * width * height); 
 
         compute_color_histogram(red, histogram_red, width, height);
         compute_color_histogram(green, histogram_green, width, height);
@@ -79,7 +80,14 @@ int main(int argc, char **argv) {
         blue = apply_filter(blue, width, height, 3, 3);
         alpha = apply_filter(alpha, width, height, 3, 3);
     }
-
+    else if (strcmp(argv[2], "barrel") == 0) {
+        //apply_barrel_correction(red, width, height);
+        //apply_barrel_correction(green, width, height);
+        //apply_barrel_correction(blue, width, height);
+        barrel_correction(red, width, height, 2.4f, 1.0f);
+        barrel_correction(green, width, height, 2.4f, 1.0f);
+        barrel_correction(blue, width, height, 2.4f, 1.0f);
+    }
 
     p = (byte*)pixels;
 

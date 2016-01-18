@@ -6,7 +6,7 @@
 
 typedef unsigned char byte;
 
-void compute_color_histogram(byte *color, byte *histogram, int width, int height)
+void compute_color_histogram(byte *color, int *histogram, int width, int height)
 {
     for (int i = 0; i < 256; ++i) {
         histogram[i] = 0;
@@ -17,7 +17,7 @@ void compute_color_histogram(byte *color, byte *histogram, int width, int height
     }
 }
 
-void get_histogram_limits(byte *histogram, int width, int height,
+void get_histogram_limits(int *histogram, int width, int height,
                             int *local_low, int *local_high)
 {
     int five_percent_limit = 0.05f * width * height;
@@ -43,7 +43,7 @@ void get_histogram_limits(byte *histogram, int width, int height,
 }
 
 void histogram_stretch(byte *red, byte *green, byte *blue,
-                       byte *h_red, byte *h_green, byte *h_blue,
+                       int *h_red, int *h_green, int *h_blue,
                        int width, int height)
 {
     int low = 0;
