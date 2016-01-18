@@ -39,6 +39,7 @@ int main(int argc, char **argv) {
         *a++ = *p++;
     }
 
+    /*
     // exposure set
     double *y_yiq = (double*) malloc(sizeof(double) * width * height);
     double *i_yiq = (double*) malloc(sizeof(double) * width * height);
@@ -46,17 +47,24 @@ int main(int argc, char **argv) {
 
     rgb_to_yiq(red, green, blue, y_yiq, i_yiq, q_yiq, width, height);
 
-    //hist_value *histogram = (hist_value *)malloc(256 * sizeof(hist_value)); 
-    //int size = compute_histogram(y_yiq, histogram, width, height);
-
-    //for (int i = 0; i < size; ++i) {
-    //    printf("%f ", histogram[i].count);
-    //}
-
     printf("%d\n", check_exposure(y_yiq, width, height));
     reglate_exposure(y_yiq, width, height, check_exposure(y_yiq, width, height));
 
     yiq_to_rgb(red, green, blue, y_yiq, i_yiq, q_yiq, width, height);
+    */
+
+    // white balancing
+    byte *histogram_red = (byte*)malloc(sizeof(byte) * width * height); 
+    byte *histogram_green = (byte*)malloc(sizeof(byte) * width * height); 
+    byte *histogram_blue = (byte*)malloc(sizeof(byte) * width * height); 
+
+    compute_color_histogram(red, histogram_red, width, height);
+    compute_color_histogram(green, histogram_green, width, height);
+    compute_color_histogram(blue, histogram_blue, width, height);
+
+    histogram_stretch(red, histogram_red, width, height);
+    histogram_stretch(green, histogram_green, width, height);
+    histogram_stretch(blue, histogram_blue, width, height);
 
     p = (byte*)pixels;
 
