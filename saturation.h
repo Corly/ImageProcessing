@@ -16,22 +16,107 @@
 
 typedef unsigned char byte;
 
-void changeSaturation(byte *R, byte *G, byte *B, double change) {
-
-    double  P = sqrt(
-            (*R) * (*R) * Pr +
-            (*G) * (*G) * Pg +
-            (*B) * (*B) * Pb ) ;
-
-    *R = P + ((*R) - P) * change;
-    *G = P + ((*G) - P) * change;
-    *B = P + ((*B) - P) * change; 
+double hue2rgb(double p, double  q, double  t)
+{
+    if(t < 0) t += 1;
+    if(t > 1) t -= 1;
+    if(t < 1/6) return p + (q - p) * 6 * t;
+    if(t < 1/2) return q;
+    if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+    return p;
 }
 
-int check_saturation(int *h, int width, int height)
+
+void hslToRgb(double h, double s, double l, byte *r, byte *g, byte *b)
 {
-    double first_threshold = (255) * 0.33f;
-    double second_threshold = (255) * 0.66f;
+    double R, G, B;
+    if (s == 0) {
+        R = G = B = 1;
+    }
+    else {
+        double q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        double p = 2 * l - q;
+
+        R = hus2rgb(p, q, h + 1/3);
+        G = hue2rgb(p, q, h);
+        B = hue2rgb(p, q, h - 1/3);
+    }
+
+    *r = R * 255;
+    *g = G * 255;
+    *b = B * 255;
+}
+
+double getMax(double a, double b, double c) 
+{
+
+    if (a < b) {
+        if ( b < c) {
+            return c;
+        }
+        else {
+            return b;
+        }
+    }
+
+    return a;
+
+}
+
+double getMin(double a, double b, double c) 
+{
+
+    if (a < b) {
+        if ( c < a) {
+            return c;
+        }
+        else {
+            return a;
+        }
+    }
+    return b;
+}
+
+void rgbToHsl(byte r, byte g, byte b, double *h, double *s, double *l)
+{
+    double R, G, B;
+
+    R = (double) r / 255;
+    G = (double) g / 255;
+    B = (double) b / 255;
+
+    double max = getMax(R, G, B);
+    double min = getMin(R, G, B);
+
+    *l = (max + min) / 2;
+
+    if (max == min) {
+        *h = *s = 0; //acromatic
+    }
+    else {
+        double d = max - min;
+        *s = *l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        
+        if (max == r) {
+            *h = (g - b) / d + (g < b ? 6 : 0); 
+        }
+
+        if (max == g) {
+            *h = (b - r) / d + 2;
+        }
+
+        if (max == b) {
+            *h = (r - g) / d + 4;
+        }
+           
+        *h /= 6;
+    }   
+}
+
+int check_saturation(double *h, int width, int height)
+{
+    double first_threshold = 0.33f;
+    double second_threshold = 0.66f;
 
     int nr1 = 0;
     int nr2 = 0;
@@ -64,35 +149,58 @@ int check_saturation(int *h, int width, int height)
     }
 }
 
-int* average(int *h_red, int *h_green, int *h_blue, int width, int height) 
-{
-    int *histogram = (int*) malloc(sizeof(int) * width * height); 
+void changeSaturation(double *s, double change) {
 
-    for (int i = 0; i < width * height; ++i) {
-        histogram[i] = (h_red[i] + h_green[i] + h_green[i]) / 3;
+    double first_threshold = 0.33f;
+    double second_threshold = 0.66f;
+
+    if (*s < first_threshold) {
+        *s += change;
+        return;
+    }
+    else if (*s < second_threshold) {
+        *s += change / 4;
+        return;
     }
 
-    return histogram;
+    if (*s > second_threshold) {
+        *s -= change;
+        return;
+    }
+    else if (*s > first_threshold) {
+        *s -= change / 4;
+        return;
+    }
+
 }
 
-void correct_saturation(byte *red, byte *green, byte *blue,
-                       int *h_red, int *h_green, int *h_blue,
-                       int width, int height) 
+void correct_saturation(byte *red, byte *green, byte *blue, int width, int height) 
 {
 
-    int *h = average(h_red, h_green, h_blue, width, height);
 
-    int k = check_saturation(h, width, height);
+    double *h = (double*)malloc(sizeof(double) * width * height); 
+    double *s = (double*)malloc(sizeof(double) * width * height); 
+    double *l = (double*)malloc(sizeof(double) * width * height); 
+
+    for (int i = 0; i < width * height; ++i) {
+        rgbToHsl(red[i], green[i], blue[i], &h[i], &s[i], &l[i]);
+    }
+
+    int k = check_saturation(s, width, height);
 
     if (k == UNDERSATURATION) {
         for (int i = 0; i < width * height; ++i) {
-            changeSaturation(&red[i], &green[i], &blue[i], 1.05);
+            changeSaturation(&s[i], 0.1);
         }
     } 
     else if(k == OVERSATURATION) {
         for (int i = 0; i < width * height; ++i) {
-            changeSaturation(&red[i], &green[i], &blue[i], 0.95);
+            changeSaturation(&s[i], 0.1);
         }
+    }
+
+    for (int i = 0; i < width * height; ++i) {
+        hslToRgb(h[i], s[i], l[i], &red[i], &green[i], &blue[i]);
     }
 
 }

@@ -81,15 +81,7 @@ int main(int argc, char **argv) {
         alpha = apply_filter(alpha, width, height, 3, 3);
     }
     else if (strcmp(argv[2], "saturation") == 0) {
-        int *histogram_red = (int*)malloc(sizeof(int) * width * height); 
-        int *histogram_green = (int*)malloc(sizeof(int) * width * height); 
-        int *histogram_blue = (int*)malloc(sizeof(int) * width * height); 
-
-        compute_color_histogram(red, histogram_red, width, height);
-        compute_color_histogram(green, histogram_green, width, height);
-        compute_color_histogram(blue, histogram_blue, width, height);
-
-        correct_saturation(red, green, blue, histogram_red, histogram_green, histogram_blue, width, height);
+        correct_saturation(red, green, blue, width, height);
     }
 
 
