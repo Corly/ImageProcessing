@@ -5,6 +5,7 @@
 #include "exposure.h"
 #include "whitebalancing.h"
 #include "noisefilter.h"
+#include "barrel.h"
 #include "saturation.h"
 
 typedef unsigned char byte;
@@ -80,10 +81,17 @@ int main(int argc, char **argv) {
         blue = apply_filter(blue, width, height, 3, 3);
         alpha = apply_filter(alpha, width, height, 3, 3);
     }
+    else if (strcmp(argv[2], "barrel") == 0) {
+        //apply_barrel_correction(red, width, height);
+        //apply_barrel_correction(green, width, height);
+        //apply_barrel_correction(blue, width, height);
+        barrel_correction(red, width, height, 2.4f, 1.0f);
+        barrel_correction(green, width, height, 2.4f, 1.0f);
+        barrel_correction(blue, width, height, 2.4f, 1.0f);
+    }
     else if (strcmp(argv[2], "saturation") == 0) {
         correct_saturation(red, green, blue, width, height);
     }
-
 
     p = (byte*)pixels;
 
