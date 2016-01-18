@@ -39,21 +39,22 @@ int main(int argc, char **argv) {
         *a++ = *p++;
     }
 
+    // exposure set
     double *y_yiq = (double*) malloc(sizeof(double) * width * height);
     double *i_yiq = (double*) malloc(sizeof(double) * width * height);
     double *q_yiq = (double*) malloc(sizeof(double) * width * height);
 
     rgb_to_yiq(red, green, blue, y_yiq, i_yiq, q_yiq, width, height);
 
-    hist_value *histogram = (hist_value *)malloc(256 * sizeof(hist_value)); 
-    int size = compute_histogram(y_yiq, histogram, width, height);
+    //hist_value *histogram = (hist_value *)malloc(256 * sizeof(hist_value)); 
+    //int size = compute_histogram(y_yiq, histogram, width, height);
 
-    for (int i = 0; i < size; ++i) {
-        printf("%f ", histogram[i].value);
-    }
+    //for (int i = 0; i < size; ++i) {
+    //    printf("%f ", histogram[i].count);
+    //}
 
-    printf("%d\n", check_exposure(histogram, size));
-    reglate_exposure(y_yiq, width, height, check_exposure(histogram, size));
+    printf("%d\n", check_exposure(y_yiq, width, height));
+    reglate_exposure(y_yiq, width, height, check_exposure(y_yiq, width, height));
 
     yiq_to_rgb(red, green, blue, y_yiq, i_yiq, q_yiq, width, height);
 

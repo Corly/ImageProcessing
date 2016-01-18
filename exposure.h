@@ -48,15 +48,63 @@ void yiq_to_rgb(byte *r, byte *g, byte *b, double *y, double *i, double *q,
     }
 }
 
+int check_exposure(double *y, int width, int height)
+{
+    double max = -2.0f;
+    double min = 2.0f;
+
+    for (int i = 0; i < width * height; ++i) {
+        if (min > y[i]) {
+            min = y[i];
+        }
+        if (max < y[i]) {
+            max = y[i];
+        }
+    }
+
+    double first_threshold = (max - min) * 0.33f;
+    double second_threshold = (max - min) * 0.66f;
+
+    int nr1 = 0;
+    int nr2 = 0;
+    int nr3 = 0;
+
+    for (int i = 0; i < width * height; ++i) {
+        if (y[i] <= first_threshold) {
+            nr1++;
+        }
+        else if (first_threshold < y[i] && y[i] < second_threshold) {
+            nr2++;
+        }
+        else {
+            nr3++;
+        }
+    }
+
+    if (nr1 > nr2 && nr1 > nr3) {
+        return UNDEREXPOSURE;
+    }
+    else if (nr2 > nr1 && nr2 > nr3) {
+        return EXPOSURE_OK;
+    }
+    else {
+        return OVEREXPOSURE;
+    }
+}
+
 int compute_histogram(double *y, hist_value *histogram, int width, int height)
 {
     //hist_value *histogram = (hist_value *)malloc(256 * sizeof(hist_value)); 
     int index = 0;
 
     for (int i = 0; i < width * height; ++i) {
+        printf("debug %d %d\n", i, index);
         bool ok = false;
         for (int j = 0; j < index; ++j) {
-            if (abs(y[i] - histogram[j].value) < DELTA) {
+            if ((y[i] - histogram[j].value > 0 &&
+                    y[i] - histogram[j].value < DELTA) ||
+                 (y[i] - histogram[j].value < 0 &&
+                    y[i] - histogram[j].value > -DELTA)) {
                 histogram[j].count++;
                 ok = true;
             }
@@ -69,6 +117,8 @@ int compute_histogram(double *y, hist_value *histogram, int width, int height)
         }
     }
 
+    printf("what?\n");
+
     for (int i = 0; i < index - 1; ++i) {
         for (int j = i + 1; j < index; ++j) {
             if (histogram[i].value > histogram[j].value) {
@@ -79,10 +129,12 @@ int compute_histogram(double *y, hist_value *histogram, int width, int height)
         }
     }
 
+    printf("index %d\n", index);
+
     return index;
 }
 
-int check_exposure(hist_value *histogram, int len)
+int check_exposure2(hist_value *histogram, int len)
 {
     int nr1 = 0;
     int nr2 = 0;
