@@ -6,6 +6,7 @@
 #include "whitebalancing.h"
 #include "noisefilter.h"
 #include "barrel.h"
+#include "saturation.h"
 
 typedef unsigned char byte;
 
@@ -63,9 +64,9 @@ int main(int argc, char **argv) {
     }
     else if (strcmp(argv[2], "whitebalancing") == 0) {
         // white balancing
-        int *histogram_red = (int*)malloc(sizeof(byte) * width * height); 
-        int *histogram_green = (int*)malloc(sizeof(byte) * width * height); 
-        int *histogram_blue = (int*)malloc(sizeof(byte) * width * height); 
+        int *histogram_red = (int*)malloc(sizeof(int) * width * height); 
+        int *histogram_green = (int*)malloc(sizeof(int) * width * height); 
+        int *histogram_blue = (int*)malloc(sizeof(int) * width * height); 
 
         compute_color_histogram(red, histogram_red, width, height);
         compute_color_histogram(green, histogram_green, width, height);
@@ -87,6 +88,17 @@ int main(int argc, char **argv) {
         barrel_correction(red, width, height, 2.4f, 1.0f);
         barrel_correction(green, width, height, 2.4f, 1.0f);
         barrel_correction(blue, width, height, 2.4f, 1.0f);
+    }
+    else if (strcmp(argv[2], "saturation") == 0) {
+        int *histogram_red = (int*)malloc(sizeof(int) * width * height); 
+        int *histogram_green = (int*)malloc(sizeof(int) * width * height); 
+        int *histogram_blue = (int*)malloc(sizeof(int) * width * height); 
+
+        compute_color_histogram(red, histogram_red, width, height);
+        compute_color_histogram(green, histogram_green, width, height);
+        compute_color_histogram(blue, histogram_blue, width, height);
+
+        correct_saturation(red, green, blue, histogram_red, histogram_green, histogram_blue, width, height);
     }
 
     p = (byte*)pixels;
