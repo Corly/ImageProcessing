@@ -22,18 +22,18 @@ double hue2rgb(double p, double  q, double  t)
 {
     if(t < 0) t += 1;
     if(t > 1) t -= 1;
-    if(t < 1/6){
-        printf("1/6\n");
+    if(t < 0.16){
+        //printf("1/6\n");
         return p + (q - p) * 6 * t;
     }
-    if(t < 1/2) {
-        printf("1/2\n");
+    if(t < 0.5) {
+        //printf("1/2\n");
         return q;
     }
 
-    if(t < 2/3) {
-        printf("1/3\n");
-        return p + (q - p) * (2/3 - t) * 6;
+    if(t < 0.66) {
+        //printf("1/3\n");
+        return p + (q - p) * (0.66 - t) * 6;
     }
     return p;
 }
@@ -41,7 +41,7 @@ double hue2rgb(double p, double  q, double  t)
 
 void hslToRgb(double h, double s, double l, byte *r, byte *g, byte *b)
 {
-    printf("hsl: %lf, %lf, %lf\n", h, s, l);
+    //printf("hsl: %lf, %lf, %lf\n", h, s, l);
 
     double R, G, B;
     if (s < DELTA) {
@@ -50,6 +50,8 @@ void hslToRgb(double h, double s, double l, byte *r, byte *g, byte *b)
     else {
         double q = l < 0.5 ? l * (1 + s) : l + s - l * s;
         double p = 2 * l - q;
+
+        h = h / 360;
 
         double offset = 1.0f / 3.0f;
         R = hue2rgb(p, q, h + offset);
@@ -62,7 +64,7 @@ void hslToRgb(double h, double s, double l, byte *r, byte *g, byte *b)
     *b = B * 255;
     // printf("rgb: %lf, %lf, %lf\n", R, G, B);
 
-    printf("rgb: %d, %d, %d\n", *r, *g, *b);
+    //printf("rgb: %d, %d, %d\n", *r, *g, *b);
 
 }
 
@@ -77,7 +79,9 @@ double getMax(double a, double b, double c)
             return b;
         }
     }
-
+    if (a < c) {
+        return c;
+    }
     return a;
 }
 
@@ -92,7 +96,12 @@ double getMin(double a, double b, double c)
             return a;
         }
     }
-    return b;
+    if (b < c) {
+        return b;
+    }
+    else {
+        return c;
+    }
 }
 
 void rgbToHsl(byte r, byte g, byte b, double *h, double *s, double *l)
@@ -107,8 +116,14 @@ void rgbToHsl(byte r, byte g, byte b, double *h, double *s, double *l)
     double min = getMin(R, G, B);
 
     *l = (max + min) / 2;
+/* 
+    if (r == 216 && g == 141 & b == 0) {
+        printf("r %lf g %lf b %lf max %lf min %lf\n", R, G, B, max, min);
+        printf("l is %lf\n", *l);
+    }
+*/
 
-    if (max == min) {
+    if (max - min < DELTA) {
         *h = *s = 0; //acromatic
     }
     else {
@@ -116,7 +131,8 @@ void rgbToHsl(byte r, byte g, byte b, double *h, double *s, double *l)
         *s = *l > 0.5 ? d / (2 - max - min) : d / (max + min);
         
         if (max == R) {
-            *h = (double) (G - B) / d + (G < B ? 6 : 0); 
+            //*h = (double) (G - B) / d + (G < B ? 6 : 0); 
+            *h = (double) (G - B) / d; 
         }
 
         if (max == G) {
@@ -127,8 +143,12 @@ void rgbToHsl(byte r, byte g, byte b, double *h, double *s, double *l)
             *h = (double) (R - G) / d + 4;
         }
         
-        // printf ("before: %lf\n", *h);
-        *h /= 6.0f;
+//        printf ("h before: %lf\n", *h);
+        //*h /= 6.0f;
+        if (*h < 0) {
+            *h += 360;
+        }
+        *h *= 60;
         // printf ("after: %lf\n", *h);
 
     }   
@@ -198,12 +218,17 @@ void correct_saturation(byte *red, byte *green, byte *blue, int width, int heigh
 
     for (int i = 0; i < width * height; ++i) {
         rgbToHsl(red[i], green[i], blue[i], &h[i], &s[i], &l[i]);
+//        printf("before: r %d g %d b %d h %lf s %lf l %lf\n", red[i], green[i],
+//                blue[i], h[i], s[i], l[i]);
+//        hslToRgb(h[i], s[i], l[i], &red[i], &green[i], &blue[i]);
+//        printf("after: r %d g %d b %d h %lf s %lf l %lf\n", red[i], green[i],
+//                blue[i], h[i], s[i], l[i]);
         //printf("hsl before: %lf, %lf, %lf\n", h[i], s[i], l[i]);
 
     }
 
     int i = 85;
-    printf("hsl before: %lf, %lf, %lf\n", h[i], s[i], l[i]);
+    //printf("hsl before: %lf, %lf, %lf\n", h[i], s[i], l[i]);
 
 
     int k = check_saturation(s, width, height);
@@ -219,7 +244,7 @@ void correct_saturation(byte *red, byte *green, byte *blue, int width, int heigh
     //     }
     // }
 
-    printf("hsl: %lf, %lf, %lf\n", h[i], s[i], l[i]);
+    //printf("hsl: %lf, %lf, %lf\n", h[i], s[i], l[i]);
 
     for (int i = 0; i < width * height; ++i) {
         // printf("before: %d, %d, %d\n", red[i], green[i], blue[i]);
