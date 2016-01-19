@@ -6,9 +6,11 @@
 #include <corona.h>
 #include <math.h>
 
-#define UNDERSATURATION  1
+#define UNDERSATURATION 1
 #define SATURATION_OK  2
 #define OVERSATURATION 3
+#define DELTA 0.004
+
 
 #define  Pr  0.299
 #define  Pg  0.587
@@ -20,31 +22,48 @@ double hue2rgb(double p, double  q, double  t)
 {
     if(t < 0) t += 1;
     if(t > 1) t -= 1;
-    if(t < 1/6) return p + (q - p) * 6 * t;
-    if(t < 1/2) return q;
-    if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+    if(t < 1/6){
+        printf("1/6\n");
+        return p + (q - p) * 6 * t;
+    }
+    if(t < 1/2) {
+        printf("1/2\n");
+        return q;
+    }
+
+    if(t < 2/3) {
+        printf("1/3\n");
+        return p + (q - p) * (2/3 - t) * 6;
+    }
     return p;
 }
 
 
 void hslToRgb(double h, double s, double l, byte *r, byte *g, byte *b)
 {
+    printf("hsl: %lf, %lf, %lf\n", h, s, l);
+
     double R, G, B;
-    if (s == 0) {
-        R = G = B = 1;
+    if (s < DELTA) {
+        R = G = B = l;
     }
     else {
         double q = l < 0.5 ? l * (1 + s) : l + s - l * s;
         double p = 2 * l - q;
 
-        R = hus2rgb(p, q, h + 1/3);
+        double offset = 1.0f / 3.0f;
+        R = hue2rgb(p, q, h + offset);
         G = hue2rgb(p, q, h);
-        B = hue2rgb(p, q, h - 1/3);
+        B = hue2rgb(p, q, h - offset);
     }
 
     *r = R * 255;
     *g = G * 255;
     *b = B * 255;
+    // printf("rgb: %lf, %lf, %lf\n", R, G, B);
+
+    printf("rgb: %d, %d, %d\n", *r, *g, *b);
+
 }
 
 double getMax(double a, double b, double c) 
@@ -60,7 +79,6 @@ double getMax(double a, double b, double c)
     }
 
     return a;
-
 }
 
 double getMin(double a, double b, double c) 
@@ -97,20 +115,25 @@ void rgbToHsl(byte r, byte g, byte b, double *h, double *s, double *l)
         double d = max - min;
         *s = *l > 0.5 ? d / (2 - max - min) : d / (max + min);
         
-        if (max == r) {
-            *h = (g - b) / d + (g < b ? 6 : 0); 
+        if (max == R) {
+            *h = (double) (G - B) / d + (G < B ? 6 : 0); 
         }
 
-        if (max == g) {
-            *h = (b - r) / d + 2;
+        if (max == G) {
+            *h = (double) (B - R) / d + 2;
         }
 
-        if (max == b) {
-            *h = (r - g) / d + 4;
+        if (max == B) {
+            *h = (double) (R - G) / d + 4;
         }
-           
-        *h /= 6;
+        
+        // printf ("before: %lf\n", *h);
+        *h /= 6.0f;
+        // printf ("after: %lf\n", *h);
+
     }   
+    // printf("hsl: %lf, %lf, %lf\n", *h, *s, *l);
+
 }
 
 int check_saturation(double *h, int width, int height)
@@ -154,21 +177,12 @@ void changeSaturation(double *s, double change) {
     double first_threshold = 0.33f;
     double second_threshold = 0.66f;
 
-    if (*s < first_threshold) {
+    if (*s < first_threshold || *s > second_threshold) {
         *s += change;
         return;
     }
-    else if (*s < second_threshold) {
+    else {
         *s += change / 4;
-        return;
-    }
-
-    if (*s > second_threshold) {
-        *s -= change;
-        return;
-    }
-    else if (*s > first_threshold) {
-        *s -= change / 4;
         return;
     }
 
@@ -184,23 +198,36 @@ void correct_saturation(byte *red, byte *green, byte *blue, int width, int heigh
 
     for (int i = 0; i < width * height; ++i) {
         rgbToHsl(red[i], green[i], blue[i], &h[i], &s[i], &l[i]);
+        //printf("hsl before: %lf, %lf, %lf\n", h[i], s[i], l[i]);
+
     }
+
+    int i = 85;
+    printf("hsl before: %lf, %lf, %lf\n", h[i], s[i], l[i]);
+
 
     int k = check_saturation(s, width, height);
 
-    if (k == UNDERSATURATION) {
-        for (int i = 0; i < width * height; ++i) {
-            changeSaturation(&s[i], 0.1);
-        }
-    } 
-    else if(k == OVERSATURATION) {
-        for (int i = 0; i < width * height; ++i) {
-            changeSaturation(&s[i], 0.1);
-        }
-    }
+    // if (k == UNDERSATURATION) {
+    //     for (int i = 0; i < width * height; ++i) {
+    //         changeSaturation(&s[i], 0.1);
+    //     }
+    // } 
+    // else if(k == OVERSATURATION) {
+    //     for (int i = 0; i < width * height; ++i) {
+    //         changeSaturation(&s[i], -0.1);
+    //     }
+    // }
+
+    printf("hsl: %lf, %lf, %lf\n", h[i], s[i], l[i]);
 
     for (int i = 0; i < width * height; ++i) {
+        // printf("before: %d, %d, %d\n", red[i], green[i], blue[i]);
+        //printf("hsl: %lf, %lf, %lf\n", h[i], s[i], l[i]);
+
         hslToRgb(h[i], s[i], l[i], &red[i], &green[i], &blue[i]);
+
+        // printf("after: %d, %d, %d\n", red[i], green[i], blue[i]);
     }
 
 }
