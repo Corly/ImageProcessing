@@ -233,16 +233,16 @@ void correct_saturation(byte *red, byte *green, byte *blue, int width, int heigh
 
     int k = check_saturation(s, width, height);
 
-    // if (k == UNDERSATURATION) {
-    //     for (int i = 0; i < width * height; ++i) {
-    //         changeSaturation(&s[i], 0.1);
-    //     }
-    // } 
-    // else if(k == OVERSATURATION) {
-    //     for (int i = 0; i < width * height; ++i) {
-    //         changeSaturation(&s[i], -0.1);
-    //     }
-    // }
+    if (k == UNDERSATURATION) {
+         for (int i = 0; i < width * height; ++i) {
+             changeSaturation(&s[i], 0.4);
+         }
+    } 
+    else if(k == OVERSATURATION) {
+        for (int i = 0; i < width * height; ++i) {
+             changeSaturation(&s[i], -0.4);
+         }
+    }
 
     //printf("hsl: %lf, %lf, %lf\n", h[i], s[i], l[i]);
 
